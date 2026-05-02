@@ -9,10 +9,10 @@
 *.log
 debug.log
 
-# Temporary files
+# OS / temp
+Thumbs.db
 *.tmp
 *.swp
-Thumbs.db
 
 # Archives
 *.zip
@@ -29,3 +29,5 @@ vendor/
 # Environment / local config
 .env
 .env.*
+wp-config.php
+.htaccess

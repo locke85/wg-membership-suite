@@ -1,0 +1,31 @@
+{
+  "name": "webGefaehrte Membership Suite",
+  "version": "1.0.0",
+  "download_url": "",
+  "homepage": "https://webgefaehrte.de/",
+  "requires": "6.0",
+  "tested": "6.5",
+  "last_updated": "2026-05-01 00:00:00",
+  "upgrade_notice": "Initial packaged Membership Suite release with migrated checkout, membership, login, LMS and frontend integrations.",
+  "author": "Jan (webGefaehrte)",
+  "author_homepage": "https://webgefaehrte.de/author/locke85/",
+  "sections": {
+    "description": "<p><strong>webGefaehrte Membership Suite</strong> packages the migrated membership, checkout, login, 2FA, LMS, admin and frontend integrations from the former GeneratePress child theme into a reusable WordPress plugin. It preserves the existing <code>wg_*</code> compatibility layer, checkout flow, CPT slugs, shortcodes, meta keys and offer-role behavior while keeping optional integrations defensive.</p><ul><li>Membership and checkout flow without WooCommerce</li><li>CF7-based multi-step checkout integration</li><li>Login, password reset and email 2FA helpers</li><li>LMS quiz, progress, points and activity sync helpers</li><li>GenerateBlocks, MediaElement and frontend integration layer</li><li>Reusable compatibility wrappers for legacy theme calls</li></ul>",
+    "installation": "<ol><li>Download the latest ZIP package.</li><li>Go to <code>Plugins -&gt; Add New -&gt; Upload Plugin</code>.</li><li>Upload and install the ZIP file.</li><li>Activate the plugin.</li><li>Open the Membership Suite settings and configure the site-local page and CF7 IDs.</li></ol>",
+    "changelog": "<h4>1.0.0</h4><ul><li>Enablement for GitHub-based distribution and repository handoff</li><li>Prepared plugin package metadata and release history for public source control</li></ul><h4>0.9.0</h4><ul><li>Updated the GenerateBlocks <code>{{logout_url}}</code> placeholder to redirect users to <code>/abmelden-erfolgreich/</code> after logout</li><li>Published the logout placeholder fix as the primary functional change in this package revision</li></ul><h4>0.8.0</h4><ul><li>Packaging refresh with no functional source-code delta compared to <code>0.7.0</code></li><li>Retained the migrated REST, multisite and runtime-toggle behavior from the previous release</li></ul><h4>0.7.0</h4><ul><li>Added the migrated Spickzettel REST endpoint <code>custom/v1/spickzettel-url</code> to the Membership Suite runtime</li><li>Added the new frontend Spickzettel component to plugin bootstrap and preserved legacy access through compatibility wrappers</li><li>Expanded README documentation for the migrated REST endpoint and site-specific nonce handling</li></ul><h4>0.6.0</h4><ul><li>Packaging refresh with no functional source-code delta compared to <code>0.5.0</code></li><li>Kept the multisite activation and site-local runtime controls introduced in the previous release unchanged</li></ul><h4>0.5.0</h4><ul><li>Added multisite-aware activation, deactivation and new-site initialization support</li><li>Introduced the site-local <code>site_enabled</code> runtime switch while keeping CPTs, settings and core admin functions available</li><li>Extended settings and config handling for site-local page IDs, checkout page IDs and network activation bookkeeping</li></ul><h4>0.4.0</h4><ul><li>Hardened the user-data preview flow and documented the plugin more comprehensively in the bundled README</li><li>Expanded the Contact Form 7 integration wrapper so CF7-dependent hooks remain defensive when the plugin is missing</li><li>Improved MediaElement integration behavior and frontend asset scoping for the playback-speed enhancement</li></ul><h4>0.3.0</h4><ul><li>Aligned Step 3 order handling, prefill user data and 2FA redirect behavior more closely with the legacy theme flow</li><li>Expanded compatibility wrappers for legacy global helper calls</li><li>Improved user-data handling for checkout-related profile fields used during final review and redirect flows</li></ul><h4>0.2.0</h4><ul><li>Hardened avatar upload handling with stricter validation, nonce checks and safer form processing</li><li>Moved primary checkout, login and password-reset settings to integer-based IDs with legacy fallback support</li><li>Extended checkout, pricing, order finalization and 2FA handling to stabilize the migrated purchase flow</li><li>Expanded compatibility wrappers and admin settings coverage for the early plugin migration phase</li></ul><h4>0.1.0</h4><ul><li>Initial plugin release based on the migrated webGefaehrte membership child-theme logic</li><li>Added reusable CPT handling for <code>wg_angebot</code>, <code>wg_bestellung</code> and <code>wg_rechnung</code></li><li>Migrated checkout, pricing, order finalization and duplicate-account resolution flows</li><li>Migrated login, password reset, REST-based 2FA and site-local settings handling</li><li>Added compatibility wrappers for legacy global functions and preserved shortcode names</li><li>Included MediaElement playback-speed assets, GenerateBlocks helpers and frontend hardening updates</li></ul>"
+  },
+  "icons": {
+    "1x": "",
+    "2x": ""
+  },
+  "banners": {
+    "low": "",
+    "high": ""
+  },
+  "rating": {
+    "rating": "5",
+    "num_ratings": 0
+  },
+  "downloaded": 0,
+  "active_installs": 0
+}
