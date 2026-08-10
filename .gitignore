@@ -13,6 +13,7 @@ debug.log
 Thumbs.db
 *.tmp
 *.swp
+.sync-work-checkout/
 
 # Archives
 *.zip

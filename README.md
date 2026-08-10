@@ -1,5 +1,11 @@
 # webGefaehrte Membership Suite
 
+> Für die Übernahme der Webgefaehrte-Cockpits aus dem Plattform-Repo gelten der
+> [Übergabevertrag](docs/governance/platform-membership-community-boundary.md)
+> und der
+> [Migrationstask](docs/tasks/task-migrate-webgefaehrte-cockpit-into-membership-suite-01.md).
+> Die Community-Ablage ist derzeit ausdrücklich geparkt.
+
 Zweck des Plugins:
 
 - Migration der Membership-, Checkout-, Login-, 2FA-, LMS-, Admin- und Frontend-Logik aus einem GeneratePress-Child-Theme in ein wiederverwendbares Plugin
