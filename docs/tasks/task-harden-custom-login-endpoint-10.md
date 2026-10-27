@@ -2,9 +2,10 @@
 
 ## Status
 
-Offen. Dieser Task beschreibt die Korrektur und autorisiert weder einen
-produktiven Rollout noch Änderungen an Traefik oder am Custom Functionality
-Plugin.
+Umgesetzt in Version 1.9.5. Der produktive Patch verarbeitet Anmeldungen an
+der konfigurierten Login-Seite wieder durch den WordPress-Kern, ohne die
+gestaltete Seite zu ersetzen. Traefik und das Custom Functionality Plugin
+bleiben unverändert.
 
 ## Ausgangslage
 
@@ -149,3 +150,19 @@ einem produktiven Test werden Pluginstand, Einstellungen und veröffentlichte
 Login-/Reset-Seiten dokumentiert. Bei einer Störung wird nur dieser Patch auf
 den letzten freigegebenen Pluginstand zurückgesetzt; Inhalte, Nutzerkonten und
 Passwörter bleiben unverändert.
+
+## Abnahme 2026-10-27
+
+- Die PHP-Prüfung sowie die drei Login-, Darstellungs- und Reset-Harnesses
+  laufen fehlerfrei.
+- Auf `landingheld.de` liefert die Login-Seite Formular und Eingabefelder. Ein
+  leerer Formular-POST erreicht die WordPress-Anmeldemaske und gibt den
+  erwarteten Validierungsfehler zurück.
+- Direkte GET- und leere POST-Aufrufe von `/wp-login.php` liefern HTTP 404 und
+  enthalten keinen Hinweis auf die konfigurierte Login-Adresse.
+- Reset und erneute Anmeldung funktionieren auf der konfigurierten Adresse.
+- Die Browser-Abnahme für Desktop und Mobil meldet keine harten Fehler.
+
+Die positive Anmeldung mit E-Mail-2FA wurde nicht mit einem Produktivkonto
+ausgeführt. Dafür ist weiterhin ein ausdrücklich freigegebenes synthetisches
+Testkonto erforderlich.

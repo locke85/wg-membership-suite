@@ -14,10 +14,11 @@ if (!defined('ABSPATH')) {
 
 class Two_Factor_Email {
     public static function register() {
-        add_action('init', [static::class, 'register_secure_login_rewrite']);
         add_filter('login_url', [static::class, 'filter_login_url'], 10, 3);
         add_filter('site_url', [static::class, 'filter_site_login_url'], 10, 4);
         add_action('init', [static::class, 'redirect_wp_login'], 1);
+        add_action('template_redirect', [static::class, 'dispatch_configured_login_request'], 1);
+        add_action('init', [static::class, 'remove_legacy_login_rewrite'], 99);
         add_filter('authenticate', [static::class, 'block_direct_core_credentials'], 1, 3);
         add_action('wp_login', [static::class, 'handle_2fa_on_login'], 10, 2);
         add_action('show_user_profile', [static::class, 'render_user_profile_2fa_field']);
@@ -44,26 +45,13 @@ class Two_Factor_Email {
         return wp_validate_redirect((string) $raw_redirect, admin_url());
     }
 
-    public static function register_secure_login_rewrite() {
-        if (!Config::is_two_factor_enabled()) {
-            return;
-        }
-
-        $path = static::get_configured_login_path();
-        if ($path === '') {
-            return;
-        }
-
-        add_rewrite_rule('^' . preg_quote($path, '#') . '/?$', 'wp-login.php', 'top');
-    }
-
     public static function filter_login_url($login_url, $redirect, $force_reauth) {
         if (!Config::is_two_factor_enabled()) {
             return $login_url;
         }
         $url = Config::get_login_url();
         if (!empty($redirect)) {
-            $url = add_query_arg('redirect_to', rawurlencode(wp_validate_redirect($redirect, static::get_safe_fallback_redirect())), $url);
+            $url = add_query_arg('redirect_to', wp_validate_redirect($redirect, static::get_safe_fallback_redirect()), $url);
         }
         if ($force_reauth) {
             $url = add_query_arg('reauth', '1', $url);
@@ -78,12 +66,41 @@ class Two_Factor_Email {
         }
 
         $query = wp_parse_url($url, PHP_URL_QUERY);
-        if (!$query) {
-            return Config::get_login_url();
+        $args = [];
+        if (is_string($query) && $query !== '') {
+            parse_str($query, $args);
         }
 
-        parse_str($query, $args);
-        return add_query_arg($args, Config::get_login_url());
+        $action = isset($args['action']) ? sanitize_key((string) $args['action']) : '';
+        $target = in_array($action, ['lostpassword', 'retrievepassword', 'rp', 'resetpass'], true)
+            ? Config::get_password_reset_url()
+            : Config::get_login_url();
+
+        if ($target === Config::get_login_url()) {
+            $args = array_merge(static::get_login_passthrough_args(), $args);
+        }
+
+        return empty($args) ? $target : add_query_arg($args, $target);
+    }
+
+    /**
+     * Preserve the small, explicit set of login-state arguments when the
+     * rendered form is submitted back to the configured page.
+     */
+    private static function get_login_passthrough_args() {
+        $args = [];
+
+        if (isset($_REQUEST['redirect_to'])) {
+            $args['redirect_to'] = wp_validate_redirect((string) wp_unslash($_REQUEST['redirect_to']), static::get_safe_fallback_redirect());
+        }
+
+        foreach (['reauth', 'interim-login'] as $key) {
+            if (isset($_REQUEST[$key]) && (string) $_REQUEST[$key] === '1') {
+                $args[$key] = '1';
+            }
+        }
+
+        return $args;
     }
 
     public static function redirect_wp_login() {
@@ -96,6 +113,56 @@ class Two_Factor_Email {
         }
 
         static::reject_direct_core_login_request();
+    }
+
+    /**
+     * Keep the configured URL as a normal WordPress page for GET requests so
+     * its shortcode, password-reset form and GeneratePress layout render.
+     * Only the form submission and the narrowly required core actions are
+     * handed to WordPress' own wp-login.php implementation.
+     */
+    public static function dispatch_configured_login_request() {
+        if (!static::should_dispatch_configured_login_request()) {
+            return;
+        }
+
+        require ABSPATH . 'wp-login.php';
+        exit;
+    }
+
+    public static function should_dispatch_configured_login_request() {
+        if (!Config::is_two_factor_enabled() || static::is_non_browser_request() || static::get_login_request_context() !== 'configured') {
+            return false;
+        }
+
+        $method = static::get_request_method();
+        $action = static::get_login_action();
+
+        if ($method === 'POST') {
+            return static::is_credential_request() || $action === 'postpass';
+        }
+
+        return $method === 'GET' && ($action === 'logout' || static::has_request_flag('interim-login'));
+    }
+
+    private static function has_request_flag($key) {
+        return isset($_REQUEST[$key]) && (string) wp_unslash($_REQUEST[$key]) === '1';
+    }
+
+    /**
+     * Releases rewrite rules created by pre-1.9.5 builds. Those rules claimed
+     * the public page for every request and made the styled login page and its
+     * POST target mutually exclusive. The marker makes the expensive flush run
+     * once per site only.
+     */
+    public static function remove_legacy_login_rewrite() {
+        $option = 'wg_membership_suite_login_routing_version';
+        if (get_option($option, '') === '2') {
+            return;
+        }
+
+        flush_rewrite_rules(false);
+        update_option($option, '2', false);
     }
 
     public static function should_reject_core_login_request() {

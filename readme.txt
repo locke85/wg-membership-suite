@@ -4,7 +4,7 @@ Tags: membership, checkout, lms, login, 2fa, multisite
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.9.4
+Stable tag: 1.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,12 @@ The suite provides `wg_angebot`, `wg_bestellung` and `wg_rechnung`.
 No. Deactivation does not delete posts, roles, options or user data.
 
 == Changelog ==
+
+= 1.9.5 =
+
+* Route configured login submissions to WordPress core without replacing the styled login page.
+* Keep logout, interim login, protected posts, reauthentication and password-reset routing on their intended paths.
+* Remove legacy login rewrite rules once per site so the login page and its form target remain compatible.
 
 = 1.9.4 =
 
