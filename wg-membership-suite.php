@@ -3,7 +3,7 @@
  * Plugin Name: webGefaehrte Membership Suite
  * Plugin URI: https://webgefaehrte.de/
  * Description: Membership, checkout, login, 2FA, LMS and frontend integrations for webGefaehrte sites.
- * Version: 1.0.0
+ * Version: 1.9.3
  * Author: Jan (webGefährte)
  * Text Domain: wg-membership-suite
  * Domain Path: /languages
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 define('WG_MEMBERSHIP_SUITE_FILE', __FILE__);
 define('WG_MEMBERSHIP_SUITE_PATH', plugin_dir_path(__FILE__));
 define('WG_MEMBERSHIP_SUITE_URL', plugin_dir_url(__FILE__));
-define('WG_MEMBERSHIP_SUITE_VERSION', '0.1.0');
+define('WG_MEMBERSHIP_SUITE_VERSION', '1.9.3');
 
 $wg_membership_suite_files = [
     'includes/Config.php',

@@ -18,6 +18,7 @@ class Two_Factor_Email {
         add_filter('login_url', [static::class, 'filter_login_url'], 10, 3);
         add_filter('site_url', [static::class, 'filter_site_login_url'], 10, 4);
         add_action('init', [static::class, 'redirect_wp_login'], 1);
+        add_filter('authenticate', [static::class, 'block_direct_core_credentials'], 1, 3);
         add_action('wp_login', [static::class, 'handle_2fa_on_login'], 10, 2);
         add_action('show_user_profile', [static::class, 'render_user_profile_2fa_field']);
         add_action('edit_user_profile', [static::class, 'render_user_profile_2fa_field']);
@@ -44,10 +45,16 @@ class Two_Factor_Email {
     }
 
     public static function register_secure_login_rewrite() {
-        if (!Config::is_two_factor_enabled() || Config::get_login_page_id() > 0) {
+        if (!Config::is_two_factor_enabled()) {
             return;
         }
-        add_rewrite_rule('^' . Config::get_login_slug() . '/?$', 'wp-login.php', 'top');
+
+        $path = static::get_configured_login_path();
+        if ($path === '') {
+            return;
+        }
+
+        add_rewrite_rule('^' . preg_quote($path, '#') . '/?$', 'wp-login.php', 'top');
     }
 
     public static function filter_login_url($login_url, $redirect, $force_reauth) {
@@ -65,20 +72,138 @@ class Two_Factor_Email {
     }
 
     public static function filter_site_login_url($url, $path, $scheme) {
-        if (!Config::is_two_factor_enabled() || strpos($url, 'wp-login.php') === false) {
+        $url_path = wp_parse_url($url, PHP_URL_PATH);
+        if (!Config::is_two_factor_enabled() || !is_string($url_path) || trim(rawurldecode($url_path), '/') !== static::get_core_login_path()) {
             return $url;
         }
-        return Config::get_login_url();
+
+        $query = wp_parse_url($url, PHP_URL_QUERY);
+        if (!$query) {
+            return Config::get_login_url();
+        }
+
+        parse_str($query, $args);
+        return add_query_arg($args, Config::get_login_url());
     }
 
     public static function redirect_wp_login() {
-        if (!Config::is_two_factor_enabled() || wp_doing_ajax() || (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST')) {
+        if (!Config::is_two_factor_enabled() || static::is_non_browser_request()) {
             return;
         }
-        if (strpos(wp_unslash($_SERVER['REQUEST_URI'] ?? ''), 'wp-login.php') !== false) {
-            wp_safe_redirect(Config::get_login_url());
-            exit;
+
+        if (!static::should_reject_core_login_request()) {
+            return;
         }
+
+        static::reject_direct_core_login_request();
+    }
+
+    public static function should_reject_core_login_request() {
+        if (!Config::is_two_factor_enabled() || static::is_non_browser_request()) {
+            return false;
+        }
+
+        $context = static::get_login_request_context();
+        if ($context !== 'direct' && !($context === 'unknown' && static::is_executing_core_login())) {
+            return false;
+        }
+
+        // Password-protected posts use this exact core action. Their generated
+        // form URL is rewritten to the configured path; this narrow allowance
+        // preserves legacy forms while keeping authentication closed on the
+        // direct core endpoint.
+        return !(static::get_request_method() === 'POST' && static::get_login_action() === 'postpass');
+    }
+
+    /**
+     * Identifies the public request path instead of the PHP script selected by
+     * WordPress. Rewrites execute wp-login.php internally, so SCRIPT_NAME alone
+     * would incorrectly block the configured login URL.
+     *
+     * @return string configured|direct|other|unknown
+     */
+    public static function get_login_request_context() {
+        $request_path = static::get_request_path();
+        if ($request_path === '') {
+            return 'unknown';
+        }
+
+        if (hash_equals(static::get_configured_login_path(), $request_path)) {
+            return 'configured';
+        }
+
+        if (hash_equals(static::get_core_login_path(), $request_path)) {
+            return 'direct';
+        }
+
+        return 'other';
+    }
+
+    public static function block_direct_core_credentials($user, $username, $password) {
+        if (!Config::is_two_factor_enabled() || static::is_non_browser_request() || static::get_login_request_context() !== 'direct' || !static::is_credential_request()) {
+            return $user;
+        }
+
+        return new \WP_Error('wg_login_path_unavailable', __('Die Anmeldung steht über diesen Weg nicht zur Verfügung.', 'wg-membership-suite'));
+    }
+
+    public static function is_credential_request() {
+        if (static::get_request_method() !== 'POST' || static::get_login_action() !== 'login') {
+            return false;
+        }
+
+        return isset($_POST['log']) || isset($_POST['pwd']);
+    }
+
+    public static function get_request_path() {
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
+        $path = is_string($request_uri) ? wp_parse_url($request_uri, PHP_URL_PATH) : '';
+        return is_string($path) ? trim(rawurldecode($path), '/') : '';
+    }
+
+    public static function get_configured_login_path() {
+        $path = wp_parse_url(Config::get_login_url(), PHP_URL_PATH);
+        return is_string($path) ? trim(rawurldecode($path), '/') : '';
+    }
+
+    public static function get_core_login_path() {
+        // This method is called from the `site_url` filter. Calling get_site_url()
+        // here would invoke the same filter again and exhaust PHP memory.
+        $url = function_exists('network_site_url')
+            ? network_site_url('wp-login.php', 'login')
+            : home_url('/wp-login.php');
+        $path = wp_parse_url($url, PHP_URL_PATH);
+        return is_string($path) ? trim(rawurldecode($path), '/') : 'wp-login.php';
+    }
+
+    public static function get_request_method() {
+        return strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    }
+
+    public static function get_login_action() {
+        $action = isset($_REQUEST['action']) ? wp_unslash($_REQUEST['action']) : 'login';
+        return sanitize_key((string) $action) ?: 'login';
+    }
+
+    public static function is_executing_core_login() {
+        $script_name = isset($_SERVER['SCRIPT_NAME']) ? trim((string) $_SERVER['SCRIPT_NAME'], '/') : '';
+        return $script_name !== '' && hash_equals(static::get_core_login_path(), $script_name);
+    }
+
+    public static function is_non_browser_request() {
+        return (defined('WP_CLI') && WP_CLI)
+            || (function_exists('wp_doing_ajax') && wp_doing_ajax())
+            || (defined('REST_REQUEST') && REST_REQUEST);
+    }
+
+    public static function reject_direct_core_login_request() {
+        status_header(404);
+        nocache_headers();
+        wp_die(
+            esc_html__('Diese Seite ist nicht verfügbar.', 'wg-membership-suite'),
+            esc_html__('Nicht gefunden', 'wg-membership-suite'),
+            ['response' => 404]
+        );
     }
 
     public static function user_has_2fa_enabled($user_id = 0) {

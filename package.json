@@ -1,0 +1,12 @@
+{
+  "name": "wg-membership-suite-browser-qa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "browser-qa": "node control-plane/browser-qa/cli.mjs",
+    "browser-qa:preflight": "node control-plane/browser-qa/cli.mjs --preflight"
+  },
+  "devDependencies": {
+    "playwright": "1.54.2"
+  }
+}
