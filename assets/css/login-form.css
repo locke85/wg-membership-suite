@@ -1,0 +1,40 @@
+/* Scoped to the configured membership login page. */
+.wg-membership-login-page #wg-login-form {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.wg-membership-login-page #wg-login-form p {
+    margin: 0;
+}
+
+.wg-membership-login-page #wg-login-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.wg-membership-login-page #wg-login-form input[type="text"],
+.wg-membership-login-page #wg-login-form input[type="password"] {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-height: 3rem;
+    color: var(--contrast-3, #333344);
+    background-color: #ffffff;
+    border: 1px solid var(--contrast-3, #333344);
+}
+
+.wg-membership-login-page #wg-login-form input[type="text"]:focus,
+.wg-membership-login-page #wg-login-form input[type="password"]:focus {
+    outline: 2px solid var(--accent, #3067b1);
+    outline-offset: 2px;
+}
+
+.wg-membership-login-page #wg-login-form .login-remember label {
+    display: inline;
+}
+
+.wg-membership-login-page .top-bar,
+.wg-membership-login-page .site-footer {
+    display: none;
+}
