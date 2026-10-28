@@ -1,0 +1,132 @@
+.gb-tabs,
+.gb-tabs .gb-tabs__items,
+.gb-tabs .gb-tabs__item,
+.gb-tabs .gb-loop-item,
+.gb-tabs .gb-accordion,
+.gb-tabs .gb-accordion__item,
+.gb-tabs .gb-accordion__content,
+.gb-tabs .dynamic-box {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+}
+
+.gb-tabs .dynamic-box > *,
+.gb-tabs .dynamic-box figure.wp-block-video,
+.gb-tabs .dynamic-box .wp-video,
+.gb-tabs .dynamic-box .mejs-container,
+.gb-tabs .dynamic-box .mejs-inner,
+.gb-tabs .dynamic-box iframe,
+.gb-tabs .dynamic-box video,
+.gb-tabs .dynamic-box img {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100% !important;
+}
+
+.gb-tabs .dynamic-box figure.wp-block-video,
+.gb-tabs .dynamic-box .wp-video,
+.gb-tabs .dynamic-box .mejs-container,
+.gb-tabs .dynamic-box iframe,
+.gb-tabs .dynamic-box video {
+    width: 100% !important;
+}
+
+.gb-tabs .dynamic-box video,
+.gb-tabs .dynamic-box img {
+    height: auto !important;
+}
+
+.gb-tabs .dynamic-box video,
+.gb-tabs .dynamic-box iframe {
+    display: block;
+}
+
+.gb-tabs .dynamic-box figcaption,
+.gb-tabs .dynamic-box p,
+.gb-tabs .dynamic-box li {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.gb-tabs .dynamic-box figcaption {
+    margin-bottom: 2rem;
+}
+
+.gb-tabs .wg-etappenstopp-title {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.6rem;
+    margin-bottom: 0;
+}
+
+.gb-tabs .wg-stop-status-icon {
+    color: var(--accent);
+    display: inline-flex;
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.gb-tabs .wg-stop-status-icon svg {
+    display: block;
+    height: 1em;
+    width: 1em;
+}
+
+.gb-tabs .wg-etappenstopp-entry-row {
+    align-items: center !important;
+    column-gap: 1rem !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 5ch;
+    width: 100%;
+}
+
+.gb-tabs .wg-etappenstopp-entry-row > .wg-etappenstopp-entry-time {
+    font-variant-numeric: tabular-nums;
+    justify-self: end;
+    min-width: 5ch;
+    text-align: right;
+}
+
+.gb-tabs .wg-etappenstopp-entry-toggle {
+    justify-self: start;
+    min-width: 0;
+}
+
+.gb-tabs .wg-entry-toggle-icon {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 14px;
+    height: 14px;
+    justify-content: center;
+    width: 14px;
+}
+
+.gb-tabs .wg-entry-toggle-icon svg {
+    display: block;
+    fill: none;
+}
+
+.gb-tabs .wg-entry-toggle-icon > .gb-accordion__toggle-icon-open {
+    align-items: center;
+    display: inline-flex !important;
+    justify-content: center;
+}
+
+.gb-tabs .wg-entry-toggle-icon > .gb-accordion__toggle-icon-close,
+.gb-tabs .wg-etappenstopp-entry-toggle.is-open .wg-entry-toggle-icon > .gb-accordion__toggle-icon-open {
+    display: none !important;
+}
+
+.gb-tabs .wg-etappenstopp-entry-toggle.is-open .wg-entry-toggle-icon > .gb-accordion__toggle-icon-close {
+    align-items: center;
+    display: inline-flex !important;
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    .gb-tabs .wg-etappenstopp-entry-row {
+        grid-template-columns: minmax(0, 1fr) 4.5ch;
+    }
+}

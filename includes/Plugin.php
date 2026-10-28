@@ -5,6 +5,12 @@ namespace wg\membership;
 use WP_Site;
 use wg\membership\Admin\Angebot_Meta_Boxes;
 use wg\membership\Admin\Bestellung_Admin;
+use wg\membership\Admin\Customer_Order;
+use wg\membership\Admin\Etappe_Meta_Boxes;
+use wg\membership\Admin\Finance_Archive_Admin;
+use wg\membership\Admin\Finance_Analytics_Admin;
+use wg\membership\Admin\Historical_Orders_Admin;
+use wg\membership\Admin\Parity_Review_Admin;
 use wg\membership\Admin\Settings_Page;
 use wg\membership\Admin\User_Profile_Fields;
 use wg\membership\Checkout\Step_1;
@@ -16,9 +22,13 @@ use wg\membership\CPT\Rechnung_CPT;
 use wg\membership\Frontend\Assets;
 use wg\membership\Frontend\Avatar;
 use wg\membership\Frontend\Spickzettel;
+use wg\membership\Finance\CLI as Finance_CLI;
+use wg\membership\Finance\Migration_API as Finance_Migration_API;
+use wg\membership\Finance\Schema as Finance_Schema;
 use wg\membership\Integrations\Contact_Form_7;
 use wg\membership\Integrations\GenerateBlocks;
 use wg\membership\Integrations\MediaElement;
+use wg\membership\Integrations\SMTP;
 use wg\membership\LMS\Activity_Sync;
 use wg\membership\LMS\Points;
 use wg\membership\LMS\Progress;
@@ -39,6 +49,7 @@ if (!defined('ABSPATH')) {
 class Plugin {
     public static function boot() {
         add_action('plugins_loaded', [static::class, 'load_textdomain']);
+        add_action('plugins_loaded', [Finance_Schema::class, 'maybe_upgrade']);
         add_action('init', [Angebot_CPT::class, 'register'], 5);
         add_action('init', [Bestellung_CPT::class, 'register'], 5);
         add_action('init', [Rechnung_CPT::class, 'register'], 5);
@@ -47,6 +58,15 @@ class Plugin {
         Angebot_Meta_Boxes::register();
         User_Profile_Fields::register();
         Bestellung_Admin::register();
+        Customer_Order::register();
+        Finance_Archive_Admin::register();
+        Finance_Analytics_Admin::register();
+        Historical_Orders_Admin::register();
+        Parity_Review_Admin::register();
+        Etappe_Meta_Boxes::register();
+        SMTP::register();
+        Finance_CLI::register();
+        Finance_Migration_API::register();
 
         if (is_multisite()) {
             add_action('wp_initialize_site', [static::class, 'initialize_new_site'], 10, 1);

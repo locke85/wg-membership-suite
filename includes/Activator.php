@@ -6,6 +6,7 @@ use wg\membership\CPT\Angebot_CPT;
 use wg\membership\CPT\Bestellung_CPT;
 use wg\membership\CPT\Rechnung_CPT;
 use wg\membership\Checkout\Pricing;
+use wg\membership\Finance\Schema as Finance_Schema;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -38,6 +39,21 @@ class Activator {
         Angebot_CPT::register();
         Bestellung_CPT::register();
         Rechnung_CPT::register();
+        Finance_Schema::maybe_upgrade();
+
+        $administrator = get_role('administrator');
+        if ($administrator) {
+            foreach ([
+                Config::ORDER_ON_BEHALF_CAPABILITY,
+                Config::VIEW_FINANCE_ARCHIVE_CAPABILITY,
+                Config::IMPORT_FINANCE_ARCHIVE_CAPABILITY,
+                Config::REPRINT_FINANCE_ARCHIVE_CAPABILITY,
+            ] as $capability) {
+                if (!$administrator->has_cap($capability)) {
+                    $administrator->add_cap($capability);
+                }
+            }
+        }
 
         $angebote = get_posts([
             'post_type' => 'wg_angebot',

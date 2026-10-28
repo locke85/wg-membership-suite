@@ -65,7 +65,15 @@ class Avatar {
         return 0;
     }
 
+    public static function should_override_avatar_output() {
+        return !is_admin() && !wp_doing_ajax();
+    }
+
     public static function filter_avatar_data($args, $id_or_email) {
+        if (!static::should_override_avatar_output()) {
+            return $args;
+        }
+
         $args['size'] = max(512, isset($args['size']) ? (int) $args['size'] : 0);
         $user_id = static::get_user_id_from_avatar_input($id_or_email);
         $avatar_id = $user_id ? absint(get_user_meta($user_id, 'custom_user_avatar_id', true)) : 0;
@@ -154,6 +162,10 @@ class Avatar {
     }
 
     public static function override_user_avatar_output($avatar, $id_or_email, $size, $default, $alt, $args) {
+        if (!static::should_override_avatar_output()) {
+            return $avatar;
+        }
+
         $user_id = static::get_user_id_from_avatar_input($id_or_email);
         $avatar_id = $user_id ? get_user_meta($user_id, 'custom_user_avatar_id', true) : 0;
         if ($avatar_id) {

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Etappenstopp Responsive Fixture</title>
+  <link rel="stylesheet" href="../../assets/css/etappenstopps.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 18px/1.5 Arial, sans-serif; }
+    .spacer { height: 900px; background: #f5f5fc; }
+    .layout { width: min(100% - 32px, 1320px); margin: 0 auto 80px; }
+    .gb-tabs__item, .gb-loop-item, .gb-accordion, .gb-accordion__item, .gb-accordion__content { width: 100%; }
+    .toggle-box, .open-spickzettel { display: inline-flex; padding: 12px 16px; }
+    .dynamic-box { display: none; padding: 24px; background: #fff; border: 1px solid #dfdfeb; }
+  </style>
+</head>
+<body>
+  <div class="spacer"></div>
+  <main class="layout">
+    <div class="gb-tabs">
+      <div class="gb-tabs__items">
+        <div class="gb-tabs__item gb-tabs__item-open">
+          <div class="gb-loop-item">
+            <div class="gb-accordion">
+              <div class="gb-accordion__item">
+                <div class="gb-accordion__content">
+                  <div>
+                    <button class="toggle-box wg-etappenstopp-entry-toggle" aria-expanded="false" data-post-id="49589" data-target="v-box-49589" data-action="load" type="button"><span class="gb-shape gb-icon gb-accordion__toggle-icon wg-entry-toggle-icon" aria-hidden="true"><span class="gb-accordion__toggle-icon-open wg-entry-toggle-icon__closed"><svg viewBox="0 0 14 14"><rect width="2" height="2"></rect></svg></span><span class="gb-accordion__toggle-icon-close wg-entry-toggle-icon__open"><svg viewBox="0 0 12 12"><rect width="12" height="1"></rect></svg></span></span><span>Etappenstopp öffnen</span></button>
+                    <p>10:00</p>
+                  </div>
+                  <div id="v-box-49589" class="dynamic-box">
+                    <p>Einleitungstext</p>
+                    <figure class="wp-block-video">
+                      <video width="1920" height="1024" style="aspect-ratio: 1920 / 1024;"></video>
+                      <figcaption>Video-Anleitung zum Etappenstopp</figcaption>
+                    </figure>
+                    <div class="gb-accordion transcript"><div class="gb-accordion__item"><div class="gb-accordion__content"><p>Transkript im Lesebereich.</p></div></div></div>
+                  </div>
+                  <div>
+                    <button class="open-spickzettel wg-etappenstopp-entry-toggle" aria-expanded="false" data-target="iframe-overlay" type="button"><span class="gb-shape gb-icon gb-accordion__toggle-icon wg-entry-toggle-icon" aria-hidden="true"><span class="gb-accordion__toggle-icon-open wg-entry-toggle-icon__closed"><svg viewBox="0 0 14 14"><rect width="2" height="2"></rect></svg></span><span class="gb-accordion__toggle-icon-close wg-entry-toggle-icon__open"><svg viewBox="0 0 12 12"><rect width="12" height="1"></rect></svg></span></span><span>Spickzettel</span></button>
+                    <p>60:00</p>
+                  </div>
+                  <div>
+                    <button class="toggle-box wg-etappenstopp-entry-toggle" aria-expanded="false" data-target="b-box-49589" data-action="toggle" type="button"><span class="gb-shape gb-icon gb-accordion__toggle-icon wg-entry-toggle-icon" aria-hidden="true"><span class="gb-accordion__toggle-icon-open wg-entry-toggle-icon__closed"><svg viewBox="0 0 14 14"><rect width="2" height="2"></rect></svg></span><span class="gb-accordion__toggle-icon-close wg-entry-toggle-icon__open"><svg viewBox="0 0 12 12"><rect width="12" height="1"></rect></svg></span></span><span>Besenwagen</span></button>
+                    <p>02:00</p>
+                  </div>
+                  <div id="b-box-49589" class="dynamic-box"><p>Quiz</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    document.querySelectorAll('.toggle-box').forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        event.preventDefault();
+        var box = document.getElementById(this.dataset.target);
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+        box.classList.toggle('visible', box.style.display === 'block');
+      });
+    });
+  </script>
+  <script src="../../assets/js/etappenstopps.js"></script>
+</body>
+</html>

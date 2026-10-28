@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 class Step_3_Order {
     public static function register() {
         add_filter('wpcf7_form_elements', [static::class, 'cf7_render_step3_dynamic_preview'], 20);
+        add_filter('wpcf7_skip_mail', [static::class, 'skip_native_mail_for_checkout_step3'], 20, 2);
         add_action('wpcf7_before_send_mail', [static::class, 'cf7_checkout_step3_create_order'], 30, 1);
         add_action('init', [static::class, 'handle_legacy_order_submission']);
     }
@@ -54,6 +55,10 @@ class Step_3_Order {
         }
         $value = is_array($posted_data[$field_name]) ? implode('', array_map('strval', $posted_data[$field_name])) : (string) $posted_data[$field_name];
         return trim($value) !== '';
+    }
+
+    public static function skip_native_mail_for_checkout_step3($skip_mail, $contact_form) {
+        return $skip_mail || static::is_cf7_checkout_step3_form($contact_form);
     }
 
     public static function render_checkout_duplicate_notice($customer_data) {

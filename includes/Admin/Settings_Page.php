@@ -3,6 +3,7 @@
 namespace wg\membership\Admin;
 
 use wg\membership\Config;
+use wg\membership\Integrations\SMTP;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -77,6 +78,7 @@ class Settings_Page {
                 </table>
                 <?php submit_button(); ?>
             </form>
+            <?php SMTP::render_settings_panel(); ?>
         </div>
         <?php
     }

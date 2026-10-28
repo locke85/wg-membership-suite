@@ -32,3 +32,12 @@ vendor/
 .env.*
 wp-config.php
 .htaccess
+
+# Local credentials and generated acceptance evidence
+KEYCHAIN_TOKENS.md
+*.pem
+*.key
+*.p12
+*.pfx
+artifacts/
+**/screenshots/

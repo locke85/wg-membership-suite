@@ -17,7 +17,16 @@ class Secure_Login {
     }
 
     public static function custom_login_redirect($redirect_to, $request, $user) {
-        return isset($user->roles) && is_array($user->roles) ? home_url('/schreibtisch') : $redirect_to;
+        if (!isset($user->roles) || !is_array($user->roles)) {
+            return $redirect_to;
+        }
+
+        $requested_redirect = trim((string) $request);
+        if ($requested_redirect !== '') {
+            return wp_validate_redirect($requested_redirect, home_url('/schreibtisch'));
+        }
+
+        return home_url('/schreibtisch');
     }
 
     public static function hide_admin_bar_from_non_admins() {

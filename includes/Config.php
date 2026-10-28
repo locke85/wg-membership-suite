@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
 }
 
 class Config {
+    public const ORDER_ON_BEHALF_CAPABILITY = 'wg_order_on_behalf_of_customer';
+    public const VIEW_FINANCE_ARCHIVE_CAPABILITY = 'wg_view_finance_archive';
+    public const IMPORT_FINANCE_ARCHIVE_CAPABILITY = 'wg_import_finance_archive';
+    public const REPRINT_FINANCE_ARCHIVE_CAPABILITY = 'wg_reprint_finance_archive';
     public const OPTION_KEY = 'wg_membership_suite_settings';
     public const NETWORK_ACTIVATED_OPTION = 'wg_membership_suite_network_activated';
     public const STATUS_HISTORY_KEY = '_wg_status_history';

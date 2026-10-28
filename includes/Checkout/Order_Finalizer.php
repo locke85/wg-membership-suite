@@ -13,6 +13,11 @@ if (!defined('ABSPATH')) {
 }
 
 class Order_Finalizer {
+    const OFFER_OWNER_USER_ID_OPTION = 'wg_checkout_offer_owner_user_id';
+    const MAIL_TEST_ROUTE_OPTION = 'wg_checkout_mail_test_route';
+    const MAIL_TEST_RECIPIENT_META = '_wg_checkout_mail_test_recipient';
+    const MAIL_DELIVERY_LOG_META = '_wg_checkout_mail_delivery_log';
+
     public static function get_supported_statuses() {
         return ['submitted', 'pending_admin_review', 'account_created', 'account_linked', 'completed', 'error'];
     }
@@ -166,9 +171,82 @@ class Order_Finalizer {
         return $lines;
     }
 
-    public static function send_checkout_user_mail($to_email, $subject, array $lines) {
+    public static function claim_mail_test_recipient_for_order($bestellung_id) {
+        $bestellung_id = absint($bestellung_id);
+        if ($bestellung_id <= 0 || get_post_type($bestellung_id) !== 'wg_bestellung') {
+            return '';
+        }
+
+        $claimed = sanitize_email((string) get_post_meta($bestellung_id, self::MAIL_TEST_RECIPIENT_META, true));
+        if ($claimed !== '' && is_email($claimed)) {
+            return $claimed;
+        }
+
+        $route = get_option(self::MAIL_TEST_ROUTE_OPTION, []);
+        if (!is_array($route) || empty($route['enabled'])) {
+            return '';
+        }
+
+        $trigger_user_id = absint($route['trigger_user_id'] ?? 0);
+        $armed_after_order_id = absint($route['armed_after_order_id'] ?? 0);
+        $test_recipient = sanitize_email((string) ($route['test_recipient'] ?? ''));
+        $order_user_id = absint(get_post_meta($bestellung_id, 'user_id', true));
+        $on_behalf = get_post_meta($bestellung_id, '_wg_on_behalf_audit', true);
+        if ($trigger_user_id <= 0 || $order_user_id !== $trigger_user_id || $bestellung_id <= $armed_after_order_id || !empty($on_behalf) || $test_recipient === '' || !is_email($test_recipient)) {
+            return '';
+        }
+
+        if (!delete_option(self::MAIL_TEST_ROUTE_OPTION)) {
+            return '';
+        }
+
+        update_post_meta($bestellung_id, self::MAIL_TEST_RECIPIENT_META, $test_recipient);
+        return $test_recipient;
+    }
+
+    public static function record_checkout_mail_delivery($bestellung_id, $kind, $intended_email, $actual_email, $routed, $sent) {
+        $bestellung_id = absint($bestellung_id);
+        if ($bestellung_id <= 0 || get_post_type($bestellung_id) !== 'wg_bestellung') {
+            return;
+        }
+
+        $log = get_post_meta($bestellung_id, self::MAIL_DELIVERY_LOG_META, true);
+        if (!is_array($log)) {
+            $log = [];
+        }
+        $log[] = [
+            'kind' => sanitize_key((string) $kind),
+            'intended_recipient_sha256' => hash('sha256', strtolower((string) $intended_email)),
+            'actual_recipient_sha256' => hash('sha256', strtolower((string) $actual_email)),
+            'routed_to_test' => (bool) $routed,
+            'sent' => (bool) $sent,
+            'attempted_at' => current_time('mysql'),
+        ];
+        update_post_meta($bestellung_id, self::MAIL_DELIVERY_LOG_META, $log);
+    }
+
+    public static function send_checkout_order_mail($bestellung_id, $to_email, $subject, array $lines, $kind = 'kaeufer') {
         $to_email = sanitize_email((string) $to_email);
-        return ($to_email !== '' && is_email($to_email)) ? wp_mail($to_email, $subject, implode("\n", array_filter($lines))) : false;
+        if ($to_email === '' || !is_email($to_email)) {
+            return false;
+        }
+
+        $test_recipient = self::claim_mail_test_recipient_for_order($bestellung_id);
+        $actual_email = $test_recipient !== '' ? $test_recipient : $to_email;
+        $routed = $test_recipient !== '';
+        if ($routed) {
+            $label = $kind === 'oliver' ? 'OLIVER' : 'KÄUFER';
+            $subject = sprintf('[TEST %s] %s', $label, $subject);
+            array_unshift($lines, sprintf('Testweiterleitung der %s-Nachricht.', $label), '');
+        }
+
+        $sent = wp_mail($actual_email, $subject, implode("\n", $lines));
+        self::record_checkout_mail_delivery($bestellung_id, $kind, $to_email, $actual_email, $routed, $sent);
+        return $sent;
+    }
+
+    public static function send_checkout_user_mail($to_email, $subject, array $lines, $bestellung_id = 0, $kind = 'kaeufer') {
+        return self::send_checkout_order_mail($bestellung_id, $to_email, $subject, $lines, $kind);
     }
 
     public static function send_new_account_mail($user_id, $bestellung_id, $initial_password) {
@@ -187,7 +265,7 @@ class Order_Finalizer {
             '',
         ];
 
-        return self::send_checkout_user_mail($user->user_email, __('Ihre Bestellung und Ihr neuer Zugang', 'wg-membership-suite'), array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)));
+        return self::send_checkout_user_mail($user->user_email, __('Ihre Bestellung und Ihr neuer Zugang', 'wg-membership-suite'), array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)), $bestellung_id);
     }
 
     public static function send_existing_account_mail($user_id, $bestellung_id) {
@@ -204,7 +282,74 @@ class Order_Finalizer {
             '',
         ];
 
-        return self::send_checkout_user_mail($user->user_email, __('Ihre Bestellung wurde Ihrem Konto zugeordnet', 'wg-membership-suite'), array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)));
+        return self::send_checkout_user_mail($user->user_email, __('Ihre Bestellung wurde Ihrem Konto zugeordnet', 'wg-membership-suite'), array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)), $bestellung_id);
+    }
+
+    public static function send_offer_owner_mail($buyer_user_id, $bestellung_id) {
+        $owner_user_id = absint(get_option(self::OFFER_OWNER_USER_ID_OPTION, 0));
+        $owner = get_userdata($owner_user_id);
+        $buyer = get_userdata(absint($buyer_user_id));
+        if (!($owner instanceof WP_User) || !($buyer instanceof WP_User)) {
+            return false;
+        }
+
+        $owner_email = sanitize_email((string) $owner->user_email);
+        if ($owner_email === '' || !is_email($owner_email)) {
+            return false;
+        }
+
+        $owner_name = $owner->first_name !== '' ? $owner->first_name : $owner->display_name;
+        $buyer_name = trim((string) get_post_meta($bestellung_id, 'customer_vorname', true) . ' ' . (string) get_post_meta($bestellung_id, 'customer_nachname', true));
+        if ($buyer_name === '') {
+            $buyer_name = $buyer->display_name;
+        }
+        $buyer_email = sanitize_email((string) get_post_meta($bestellung_id, 'customer_email', true));
+        if ($buyer_email === '') {
+            $buyer_email = sanitize_email((string) $buyer->user_email);
+        }
+        $angebot_id = absint(get_post_meta($bestellung_id, 'angebot_id', true));
+        $angebot = $angebot_id > 0 ? get_post($angebot_id) : null;
+        $angebot_title = $angebot instanceof WP_Post ? $angebot->post_title : __('Membership-Angebot', 'wg-membership-suite');
+
+        $lines = [
+            sprintf(__('Hallo %s,', 'wg-membership-suite'), $owner_name),
+            '',
+            __('eine neue Teilnahme wurde über die Angebotsseite bestellt.', 'wg-membership-suite'),
+            __('Teilnehmer:', 'wg-membership-suite') . ' ' . $buyer_name,
+            __('E-Mail:', 'wg-membership-suite') . ' ' . $buyer_email,
+            '',
+        ];
+
+        return self::send_checkout_user_mail(
+            $owner_email,
+            sprintf(__('Neue Bestellung: %s', 'wg-membership-suite'), $angebot_title),
+            array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)),
+            $bestellung_id,
+            'oliver'
+        );
+    }
+
+    public static function send_on_behalf_confirmation($user_id, $bestellung_id) {
+        $user = get_userdata(absint($user_id));
+        if (!($user instanceof WP_User)) {
+            return false;
+        }
+
+        $name = $user->first_name !== '' ? $user->first_name : $user->display_name;
+        $lines = [
+            sprintf(__('Hallo %s,', 'wg-membership-suite'), $name),
+            '',
+            __('wir haben die folgende Bestellung wie vereinbart in Ihrem Auftrag angelegt.', 'wg-membership-suite'),
+            __('Ihre vorhandenen Zugangsdaten bleiben unverändert.', 'wg-membership-suite'),
+            '',
+        ];
+
+        return self::send_checkout_user_mail(
+            $user->user_email,
+            __('Bestätigung Ihrer Bestellung', 'wg-membership-suite'),
+            array_merge($lines, self::get_bestellung_summary_lines($bestellung_id)),
+            $bestellung_id
+        );
     }
 
     public static function get_bestellung_admin_edit_link($bestellung_id) {
@@ -347,6 +492,8 @@ class Order_Finalizer {
             self::update_bestellung_status($bestellung_id, 'account_linked', 'Bestehender Account wurde erweitert');
             self::send_existing_account_mail($user_id, $bestellung_id);
         }
+
+        self::send_offer_owner_mail($user_id, $bestellung_id);
 
         self::update_bestellung_status($bestellung_id, 'completed', 'Bestellung vollständig verarbeitet');
         return true;

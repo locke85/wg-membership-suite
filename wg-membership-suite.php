@@ -3,7 +3,7 @@
  * Plugin Name: webGefaehrte Membership Suite
  * Plugin URI: https://webgefaehrte.de/
  * Description: Membership, checkout, login, 2FA, LMS and frontend integrations for webGefaehrte sites.
- * Version: 1.9.5
+ * Version: 1.10.0
  * Author: Jan (webGefährte)
  * Text Domain: wg-membership-suite
  * Domain Path: /languages
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 define('WG_MEMBERSHIP_SUITE_FILE', __FILE__);
 define('WG_MEMBERSHIP_SUITE_PATH', plugin_dir_path(__FILE__));
 define('WG_MEMBERSHIP_SUITE_URL', plugin_dir_url(__FILE__));
-define('WG_MEMBERSHIP_SUITE_VERSION', '1.9.5');
+define('WG_MEMBERSHIP_SUITE_VERSION', '1.10.0');
 
 $wg_membership_suite_files = [
     'includes/Config.php',
@@ -26,6 +26,21 @@ $wg_membership_suite_files = [
     'includes/CPT/Angebot_CPT.php',
     'includes/CPT/Bestellung_CPT.php',
     'includes/CPT/Rechnung_CPT.php',
+    'includes/Finance/Schema.php',
+    'includes/Finance/Archive.php',
+    'includes/Finance/MemberPress_Importer.php',
+    'includes/Finance/Historical_Analytics.php',
+    'includes/Finance/Current_Order_Projection.php',
+    'includes/Finance/Finom_Historical_Summary.php',
+    'includes/Finance/Reprint_PDF.php',
+    'includes/Finance/CLI.php',
+    'includes/Finance/Migration_API.php',
+    'includes/Admin/Analytics_Access_Gate.php',
+    'includes/Admin/Finance_Archive_Admin.php',
+    'includes/Admin/Finance_Analytics_Admin.php',
+    'includes/Admin/Historical_Orders_Admin.php',
+    'includes/Admin/Parity_Review_Admin.php',
+    'includes/Admin/Etappe_Meta_Boxes.php',
     'includes/Checkout/Pricing.php',
     'includes/Checkout/Order_Context.php',
     'includes/Checkout/Account_Resolver.php',
@@ -37,6 +52,7 @@ $wg_membership_suite_files = [
     'includes/Admin/User_Profile_Fields.php',
     'includes/Admin/Angebot_Meta_Boxes.php',
     'includes/Admin/Bestellung_Admin.php',
+    'includes/Admin/Customer_Order.php',
     'includes/Shortcodes/User_Data_Preview.php',
     'includes/Shortcodes/Order_Overview.php',
     'includes/Shortcodes/Avatar_Form.php',
@@ -46,6 +62,7 @@ $wg_membership_suite_files = [
     'includes/Login/Secure_Login.php',
     'includes/Login/Two_Factor_Email.php',
     'includes/Integrations/Contact_Form_7.php',
+    'includes/Integrations/SMTP.php',
     'includes/Integrations/GenerateBlocks.php',
     'includes/Integrations/MediaElement.php',
     'includes/Frontend/Assets.php',

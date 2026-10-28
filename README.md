@@ -36,6 +36,63 @@ Hinweis:
 - `wg_bestellung`
 - `wg_rechnung`
 
+## Historisches Finanzarchiv
+
+Historische MemberPress-Finanzdaten werden getrennt von den operativen CPTs in
+versionierten, append-only Archivtabellen gehalten. Der Import ist standardmaessig
+ein Dry-run und kann erst nach bestaetigtem DB-Vollstaendigkeits- und Mapping-Gate
+angewendet werden:
+
+```sh
+wp wg-finance memberpress-import --source-dir=/protected/export --manifest=/protected/export/manifest.json
+```
+
+Die Adminsuche liegt fuer berechtigte Rollen unter `Werkzeuge > Finanzarchiv`.
+Eine auf Bestellungen zugeschnittene, unveraenderliche Sicht ist zusaetzlich
+unter `Bestellungen > Historische Bestellungen` erreichbar. Sie filtert nach
+Bestellung/Rechnung, Kunde, Produkt, Jahr, Status und Zeitraum und exportiert
+die gefilterte Liste auditierbar als CSV, ohne operative `wg_bestellung`-Posts
+oder Checkout-Aktionen zu erzeugen.
+Originaldokumente werden nur aus `WG_FINANCE_ARCHIVE_ROOT` und nach erneuter
+SHA-256-Pruefung ausgeliefert. Details stehen im
+[Finanzarchiv-Runbook](docs/runbooks/memberpress-finance-archive-and-cutover.md).
+
+Fachliche Systemgrenze: Kundenrechnungen bis einschliesslich 2025 wurden in
+DATEV Unternehmen online durch den Steuerberater verarbeitet. Die operative
+Erstellung, der Versand und die Zahlungszuordnung wechselten bereits zum
+1. August 2025 zu Finom; erst seit 2026 entfaellt der zusaetzliche
+DATEV-Rechnungsupload. Seit August 2025 werden die Rechnungen direkt in Finom
+erstellt, versandt und Kontobewegungen zugeordnet;
+Alt-Rechnungen werden nicht nach Finom hochgeladen. Historische Bestellungen
+bleiben in der Suite als unveraenderliche Analyseprojektion fuer Registrierung,
+Kundenumsatz, Laufzeiten, Pausen sowie Produkt- und Erweiterungsanalysen
+auswertbar. Die v6-Analyse verbindet diese Historie read-only mit den
+operativen `wg_bestellung`-Datensaetzen ab 2026. MemberPress-Umsatz und
+Membership-Suite-Bestellwert bleiben getrennt; nur der kommerzielle Lifetime
+Value addiert beide klar bezeichneten Groessen. Finom-Zahlungs- und
+Rechnungsstatus werden nicht repliziert. Siehe
+[Finanzsystemgrenze und historische Analysen](docs/finance/finance-system-boundary-and-historical-analytics.md).
+
+Die Adminansicht liegt unter `Werkzeuge > Membership-Analysen`. Sie ist nur
+fuer Administratoren mit Archivberechtigung zugaenglich und wird erst nach
+erneuter Eingabe des aktuellen WordPress-Passworts fuer 15 Minuten
+eingeblendet. Der JSON-Export ist an dieselbe entsperrte Sitzung gebunden.
+Aktive, vor 2026 begonnene MemberPress-Abos und die zugehoerigen eindeutigen
+Bestandskunden werden fuer 2026 separat ausgewiesen; sie erhoehen weder Umsatz
+noch Steuer ohne eine tatsaechliche Bestellung beziehungsweise Finom-Buchung.
+Zusaetzlich zeigt die Jahresauswertung die bestaetigten aggregierten
+Finom-Geldeingaenge von 45.089,80 EUR fuer August bis Dezember 2025 und
+48.918,54 EUR fuer 2026 YTD bis 22. August. Diese Cashflow-Snapshots werden
+nicht als Netto/USt., Kunden-LTV oder Produktumsatz ausgegeben.
+Die Admin-Hauptansicht fasst die Quellsysteme dafuer als `Historie / YTD`
+zusammen. Quellen-, Steuer- und Bestelldetails, Mitglieder/LTV, Produkte und
+Paketkandidaten bleiben in zugaenglichen Aufklappbereichen erhalten.
+Vor einem Import kann derselbe Kennzahlenvertrag ohne Writes ausgefuehrt werden:
+
+```sh
+wp wg-finance memberpress-analyze --source-dir=/protected/export --manifest=/protected/export/manifest.json
+```
+
 ## Shortcodes
 
 - `[render_etappe_progress]`
@@ -48,11 +105,67 @@ Hinweis:
 - `[wg_password_reset_form]`
 - `[user_pdf_downloads]`
 
+## Login-Pfad bei aktivierter 2FA
+
+Ist die Membership-2FA aktiv, führt WordPress erzeugte Anmelde-, Abmelde- und
+Sitzungsbestätigungs-URLs auf die konfigurierte Membership-Login-Seite. Der
+direkte Core-Pfad `/wp-login.php` liefert eine neutrale 404-Antwort und nennt
+den konfigurierten Pfad nicht. Direkte Anmelde-POSTs werden vor der
+Passwortprüfung abgewiesen. Nur `postpass` für passwortgeschützte Beiträge
+bleibt als eng begrenzte Core-Aktion zulässig; WordPress erzeugt auch dafür
+den konfigurierten Pfad.
+
+Dieser Anwendungsschutz reduziert Standardbot-Traffic. Er ersetzt weder eine
+Ratenbegrenzung am Proxy noch Ressourcenlimits oder die Kontoabsicherung durch
+2FA. Bei deaktivierter Membership-2FA bleibt das WordPress-Standardverhalten
+unverändert.
+
+Lokale Prüfung:
+
+```sh
+php tests/custom-login-endpoint-harness.php
+```
+
+Der Passwort-Reset verarbeitet beide Formulare per Post/Redirect/Get. Für die
+produktive Einrichtung und SMTP-Abnahme gilt das
+[Passwort-Reset-Rollout-Runbook](docs/runbooks/password-reset-rollout.md).
+
+Der lokale Kompatibilitäts-Harness läuft ohne WordPress-Installation:
+
+```sh
+php tests/password-reset-harness.php
+```
+
+Der gemeinsame SMTP-Adapter wird unter **Einstellungen > Membership Suite >
+E-Mail-Versand (SMTP)** eingerichtet. Das Passwort wird dort einmalig erfasst,
+getrennt von der normalen Settings-Option verschlüsselt gespeichert und nie
+wieder angezeigt. Die Schaltfläche **Speichern und Testmail senden** gilt nur
+dann als erfolgreich, wenn PHPMailer die Nachricht über authentifiziertes SMTP
+angenommen hat. Der lokale Transport-Harness läuft mit:
+
+```sh
+php tests/smtp-transport-harness.php
+```
+
+## Etappen- und Checkout-Standard
+
+Version 1.9 bündelt die auf einer gemappten Multisite-Domain abgenommenen
+Etappen-Metaboxen, responsiven Etappenstopp-Assets, Quizstatus-Anzeige,
+Checkout-Session, Angebotsvorbelegung und getrennten Bestellmails. Redaktionelle
+Stopptexte, Quiz-IDs, Angebote, Empfänger und GeneratePress-Elemente bleiben
+weiterhin site-lokal und werden nicht automatisch synchronisiert.
+
 ## Settings
 
 Option-Key:
 
 - `wg_membership_suite_settings`
+
+Getrennte SMTP-Optionen:
+
+- `wg_membership_suite_smtp`: nicht geheime site-lokale Transportparameter
+- `wg_membership_suite_smtp_secret`: verschlüsseltes Passwort, kein Autoload
+- `wg_membership_suite_smtp_last_test`: secret-freier letzter Teststatus
 
 Relevante Werte und Datentypen:
 
@@ -89,6 +202,32 @@ Legacy-Fallbacks bleiben erhalten:
 - `/login-secure/`
 - CF7 Step-2 Legacy-ID/Titel
 - CF7 Step-3 Titel-/Formstruktur-Erkennung
+
+## Site-Abgleich im Admin
+
+Der Abgleich erscheint unter `Einstellungen > Membership-Abgleich`. Er liest
+ein vom Plattform-Repo erzeugtes, site-spezifisches Manifest ausschließlich
+als Datei und speichert nur Entscheidungen in
+`wg_membership_suite_parity_reviews_v1`.
+
+Die Site-Konfiguration stellt zwei Werte bereit:
+
+```php
+define('WG_MEMBERSHIP_SUITE_PARITY_SITE_ID', 'site-id');
+define('WG_MEMBERSHIP_SUITE_PARITY_MANIFEST_PATH', '/geschuetzter/pfad/comparison.json');
+```
+
+Alternativ existieren die Filter
+`wg_membership_suite_parity_site_id` und
+`wg_membership_suite_parity_manifest_path`. Das Panel führt keine
+Synchronisation aus. Der Export ist nur für Administratoren erreichbar,
+enthält keine Manifestwerte und wird mit dem WordPress-Auth-Salt signiert.
+
+Lokaler Contract-Test:
+
+```sh
+php tests/parity-review-harness.php
+```
 
 ## Zentrale globale Kompatibilitaetsfunktionen
 
